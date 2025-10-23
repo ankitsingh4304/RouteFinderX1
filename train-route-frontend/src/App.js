@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import TrainSearch from "./components/TrainSearch";
 import AuthForm from "./components/AuthForm";
-import './App.css';
+import "./App.css";
+
+const PrivateRoute = () => {
+  const token = localStorage.getItem("token");
+  return token ? <Outlet /> : <Navigate to="/login" />;
+};
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem("token") || "");
@@ -23,15 +28,18 @@ function App() {
           <div className="header-flex">
             <span className="header-centered">Train Route Finder</span>
             {token && (
-              <button className="logout-btn-header" onClick={logout}>LOGOUT</button>
+              <button className="logout-btn-header" onClick={logout}>
+                LOGOUT
+              </button>
             )}
           </div>
           <div className="card-content">
-            {token ? (
-              <TrainSearch token={token} />
-            ) : (
-              <AuthForm setToken={setToken} />
-            )}
+            <Routes>
+              <Route path="/login" element={<AuthForm setToken={setToken} />} />
+              <Route element={<PrivateRoute />}>
+                <Route path="/" element={<TrainSearch token={token} />} />
+              </Route>
+            </Routes>
           </div>
         </div>
       </div>
