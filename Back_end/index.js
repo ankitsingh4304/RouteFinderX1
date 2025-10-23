@@ -1,10 +1,18 @@
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
+const cors = require('cors');
 const multistopRoutes = require('./routes/multistoproutes');
 const authRoutes = require('./routes/auth');
 
 const app = express();
+
+app.use(cors({
+  origin: ['http://localhost:3000', 'https://your-frontend-url.vercel.app'], // add your frontend URLs here
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
+}));
 
 app.use(express.json());
 
