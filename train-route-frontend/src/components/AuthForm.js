@@ -5,6 +5,8 @@ function useQuery() {
   return new URLSearchParams(useLocation().search);
 }
 
+const API_URL = process.env.REACT_APP_API_URL;
+
 const AuthForm = ({ setToken }) => {
   const query = useQuery();
 
@@ -36,7 +38,9 @@ const AuthForm = ({ setToken }) => {
     e.preventDefault();
     setError("");
     try {
-      const url = isLogin ? "/api/auth/login" : "/api/auth/register";
+      const url = isLogin
+        ? `${API_URL}/api/auth/login`
+        : `${API_URL}/api/auth/register`;
       const res = await fetch(url, {
         method: 'POST',
         headers: { "Content-Type": "application/json" },
@@ -67,7 +71,7 @@ const AuthForm = ({ setToken }) => {
           <form className="auth-form-grid" onSubmit={async e => {
             e.preventDefault();
             setResetMsg("");
-            const res = await fetch('/api/auth/request-reset', {
+            const res = await fetch(`${API_URL}/api/auth/request-reset`, {
               method: 'POST', headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ email: resetEmail })
             });
@@ -102,7 +106,7 @@ const AuthForm = ({ setToken }) => {
           <form className="auth-form-grid" onSubmit={async e => {
             e.preventDefault();
             setSetMsg("");
-            const res = await fetch('/api/auth/reset-password', {
+            const res = await fetch(`${API_URL}/api/auth/reset-password`, {
               method: 'POST', headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ token: resetToken, password: newPassword })
             });
