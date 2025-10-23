@@ -77,6 +77,12 @@ cd backend
 node seed.js
 Only run this ONCE per new database—running repeatedly may create duplicates.
 
+## Deployment
+
+- **Frontend:** https://routefinderx1-4.onrender.com
+- **Backend API:** https://routefinderx1-5.onrender.com
+
+
 Contributing
 Pull requests are welcome. Feel free to open an issue if you want to add features or fix bugs.
 
