@@ -40,13 +40,11 @@ router.post('/search-priority-bfs', auth, async (req, res) => {
       return res.status(400).json({ success: false, message: "'from' and 'to' are required" });
     }
 
-    // Helper: Filter trains on dateOfJourney if provided
     const filterByDate = (trainList) => {
       if (!dateOfJourney) return trainList;
       return trainList.filter(t => t.dateOfJourney === dateOfJourney);
     };
 
-    // Fetch trains from DB
     const getTrains = async (source, destination) => {
       if (destination === '*') {
         return await Train.find({ source }).lean();
@@ -107,7 +105,7 @@ router.post('/search-priority-bfs', auth, async (req, res) => {
       });
     }
 
-    // BFS multi-stop search
+    // BFS multi-stop search initialization
     const initialTrainsRaw = await getTrains(from, '*');
     const initialTrains = filterByDate(initialTrainsRaw);
     for (const train of initialTrains) {
@@ -166,7 +164,7 @@ router.post('/search-priority-bfs', auth, async (req, res) => {
       }
     }
 
-    // Remove duplicates
+    // Remove duplicate routes
     const uniqueRoutes = [];
     const seen = new Set();
     for (const r of results) {
