@@ -8,7 +8,7 @@ const authRoutes = require('./routes/auth');
 const app = express();
 
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://your-frontend-url.vercel.app'], // add your frontend URLs here
+  origin: ['https://route-finder-x.vercel.app'], // your production frontend URL
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
