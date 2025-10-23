@@ -3,10 +3,18 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const nodemailer = require('nodemailer');
+const sgTransport = require('nodemailer-sendgrid-transport');
 const User = require('../models/user');
 const router = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_secret_key_here';
+
+// Configure SendGrid transporter once
+const transporter = nodemailer.createTransport(sgTransport({
+  auth: {
+    api_key: process.env.SENDGRID_API_KEY
+  }
+}));
 
 // Register
 router.post('/register',
@@ -42,7 +50,7 @@ router.post('/register',
   }
 );
 
-// Login - unchanged
+// Login unchanged
 router.post('/login',
   body('username').exists(),
   body('password').exists(),
@@ -69,7 +77,7 @@ router.post('/login',
   }
 );
 
-// Request Password Reset (case-insensitive email search)
+// Request Password Reset using SendGrid
 router.post('/request-reset',
   body('email').isEmail(),
   async (req, res) => {
@@ -83,11 +91,6 @@ router.post('/request-reset',
       if (!user) return res.status(404).json({ msg: 'User with this email not found' });
 
       const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '15m' });
-
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: { user: process.env.MAIL_USER, pass: process.env.MAIL_PASS }
-      });
 
       const resetLink = `http://localhost:3000/reset-password?token=${token}`;
 
