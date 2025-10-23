@@ -109,11 +109,6 @@ const TrainSearch = ({ token }) => {
 
       {error && <div style={{ color: "red", fontWeight: "bold", marginTop: 16 }}>{error}</div>}
 
-      <div style={{ whiteSpace: "pre-wrap", backgroundColor: "#f5f5f5", marginTop: 20, padding: 10, borderRadius: 4 }}>
-        <strong>Raw Results Data (debug):</strong>
-        <pre>{JSON.stringify(results, null, 2)}</pre>
-      </div>
-
       <div className="results-section" style={{ marginTop: 10 }}>
         <h3 style={{ color: "#217adb" }}>Results</h3>
         {Array.isArray(results) && results.length > 0 ? (
