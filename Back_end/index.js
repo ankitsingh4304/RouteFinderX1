@@ -7,8 +7,22 @@ const authRoutes = require('./routes/auth');
 
 const app = express();
 
+const allowedOrigins = [
+  'https://route-finder-x.vercel.app',       // your main frontend deployment URL
+  'https://route-finder-x-3j3x.vercel.app',  // possible preview URL(s)
+  // add other allowed origins as needed
+];
+
 app.use(cors({
-  origin: ['https://route-finder-x.vercel.app'], // your production frontend URL
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
