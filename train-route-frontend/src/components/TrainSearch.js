@@ -38,7 +38,7 @@ const TrainSearch = ({ token }) => {
         limit: Number(formData.limit),
       };
       const res = await axios.post("/api/trains/search-priority-bfs", body, { headers });
-      console.log("API results", res.data.results);
+      console.log("Full API response:", res.data);
       setResults(res.data.results || []);
     } catch (err) {
       setError(err.response?.data.message || "Search failed. Try again.");
@@ -94,6 +94,12 @@ const TrainSearch = ({ token }) => {
       {error && (
         <div style={{ color: "#d32f2f", fontWeight: 600, margin: "13px 0", fontSize: '1.16rem' }}>{error}</div>
       )}
+
+      {/* Debug output for raw results */}
+      <div style={{ whiteSpace: "pre-wrap", backgroundColor: "#f5f5f5", margin: "15px 0", padding: 10, borderRadius: 4 }}>
+        <strong>Raw Results Data (debug):</strong>
+        <pre>{JSON.stringify(results, null, 2)}</pre>
+      </div>
 
       <div className="results-section">
         <div style={{ fontWeight: 600, fontSize: "1.38rem", color: "#217adb", margin: "14px 0 7px 0" }}>
