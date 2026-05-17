@@ -7,7 +7,6 @@ const authRoutes = require('./routes/auth');
 
 const app = express();
 
-// Simple CORS for all origins (adjust for production)
 app.use(cors({
   origin: '*',
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],

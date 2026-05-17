@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
-import TrainSearch from "./components/TrainSearch";
-import AuthForm from "./components/AuthForm";
-import "./App.css";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AppLayout } from "./components/layout/AppLayout";
+import { LandingPage } from "./pages/LandingPage";
+import { Dashboard } from "./pages/Dashboard";
+import { SearchExperience } from "./pages/SearchExperience";
+import { UserDashboard } from "./pages/UserDashboard";
+import { SettingsExperience } from "./pages/SettingsExperience";
+import { AuthPage } from "./pages/AuthPage";
+import "./index.css";
 
-const PrivateRoute = () => {
+const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem("token");
-  return token ? <Outlet /> : <Navigate to="/login" />;
+  return token ? children : <Navigate to="/login" />;
 };
 
 function App() {
@@ -16,33 +21,32 @@ function App() {
     if (!token) localStorage.removeItem("token");
   }, [token]);
 
-  const logout = () => {
-    setToken("");
-    localStorage.removeItem("token");
-  };
-
   return (
     <BrowserRouter>
-      <div className="main-gradient-bg">
-        <div className="center-wrapper">
-          <div className="header-flex">
-            <span className="header-centered">Train Route Finder</span>
-            {token && (
-              <button className="logout-btn-header" onClick={logout}>
-                LOGOUT
-              </button>
-            )}
-          </div>
-          <div className="card-content">
-            <Routes>
-              <Route path="/login" element={<AuthForm setToken={setToken} />} />
-              <Route element={<PrivateRoute />}>
-                <Route path="/" element={<TrainSearch token={token} />} />
-              </Route>
-            </Routes>
-          </div>
-        </div>
-      </div>
+      <Routes>
+        <Route path="/login" element={<AuthPage setToken={setToken} />} />
+        
+        {/* App Layout encompasses the authenticated and public pages that have a sidebar */}
+        <Route element={<AppLayout />}>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/search" element={
+            <PrivateRoute>
+              <SearchExperience token={token} />
+            </PrivateRoute>
+          } />
+          <Route path="/profile" element={
+            <PrivateRoute>
+              <UserDashboard />
+            </PrivateRoute>
+          } />
+          <Route path="/settings" element={
+            <PrivateRoute>
+              <SettingsExperience />
+            </PrivateRoute>
+          } />
+        </Route>
+      </Routes>
     </BrowserRouter>
   );
 }

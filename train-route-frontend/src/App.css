@@ -314,3 +314,10 @@ body, html, #root {
   text-align: center;
   margin-bottom: 10px;
 }
+
+/* Global setting toggle override to disable high-intensity ambient glows */
+body.disable-glows * {
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
