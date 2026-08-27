@@ -6,18 +6,20 @@ import { Button } from "../components/ui/Button";
 import { Card, CardContent } from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
 import { MapPin, Calendar, Clock, ChevronRight, Train as TrainIcon, ArrowRightLeft } from "lucide-react";
+import { analyzeSearchExperience } from "../lib/aiEngine";
 
-const API_URL = process.env.REACT_APP_API_URL;
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 export const SearchExperience = ({ token }) => {
   const [formData, setFormData] = useState({
     from: "",
     to: "",
     dateOfJourney: "",
-    maxStops: localStorage.getItem("settings_max_stops") || 3,
+    maxTransfers: localStorage.getItem("settings_max_stops") || 2,
     maxFare: localStorage.getItem("settings_max_fare") || "",
     maxDuration: "",
     minAvailability: 1,
+    minTransferTime: "0:30",
     page: 1,
     limit: 10,
   });
@@ -33,24 +35,54 @@ export const SearchExperience = ({ token }) => {
     setError("");
     setLoading(true);
 
+    const authToken = token || localStorage.getItem("token");
+
+    if (!authToken) {
+      setError("You are not logged in. Please sign in to search routes.");
+      setLoading(false);
+      return;
+    }
+
     try {
-      const headers = { "x-auth-token": token };
+      const headers = { "x-auth-token": authToken };
       const body = {
         from: formData.from.toUpperCase(),
         to: formData.to.toUpperCase(),
         dateOfJourney: formData.dateOfJourney || undefined,
-        maxStops: Number(formData.maxStops),
+        maxTransfers: Number(formData.maxTransfers),
         maxFare: formData.maxFare ? Number(formData.maxFare) : undefined,
         maxDuration: formData.maxDuration || undefined,
         minAvailability: Number(formData.minAvailability),
+        minTransferTime: formData.minTransferTime || "0:30",
         page: Number(formData.page),
         limit: Number(formData.limit),
       };
 
       const res = await axios.post(`${API_URL}/api/trains/search-priority-bfs`, body, { headers });
-      setResults(res.data.results || []);
+      const returnedResults = res.data.results || [];
+      setResults(returnedResults);
+
+      // Auto-log to Search History API
+      try {
+        const topResult = returnedResults[0];
+        const routeSummary = topResult?.route ? topResult.route.map(r => r.train) : [];
+        await axios.post(`${API_URL}/api/user/history`, {
+          from: formData.from.toUpperCase(),
+          to: formData.to.toUpperCase(),
+          dateOfJourney: formData.dateOfJourney,
+          totalFare: topResult?.totalFare || 0,
+          stopsCount: topResult?.route?.length || 0,
+          routeSummary
+        }, { headers });
+      } catch (historyErr) {
+        console.warn("Could not auto-save search history:", historyErr);
+      }
     } catch (err) {
-      setError(err.response?.data.message || "Search failed. Try again.");
+      if (err.response?.status === 401) {
+        setError("Your session has expired. Please log out and sign in again.");
+      } else {
+        setError(err.response?.data.message || "Search failed. Try again.");
+      }
       setResults([]);
     }
     setLoading(false);
@@ -127,14 +159,14 @@ export const SearchExperience = ({ token }) => {
               </Button>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-6 gap-3 pt-2">
+            <div className="grid grid-cols-2 md:grid-cols-7 gap-3 pt-2">
               <div>
-                <label className="text-xs text-cyan mb-1 block px-1 font-medium">Max Stops</label>
+                <label className="text-xs text-cyan mb-1 block px-1 font-medium">Max Transfers</label>
                 <Input
-                  name="maxStops"
+                  name="maxTransfers"
                   type="number"
-                  placeholder="e.g. 3"
-                  value={formData.maxStops}
+                  placeholder="e.g. 2"
+                  value={formData.maxTransfers}
                   onChange={handleChange}
                   className="bg-white/5 border-white/10 h-10"
                 />
@@ -157,6 +189,17 @@ export const SearchExperience = ({ token }) => {
                   type="text"
                   placeholder="e.g. 12:00"
                   value={formData.maxDuration}
+                  onChange={handleChange}
+                  className="bg-white/5 border-white/10 h-10"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-cyan mb-1 block px-1 font-medium">Transfer Gap</label>
+                <Input
+                  name="minTransferTime"
+                  type="text"
+                  placeholder="e.g. 0:30"
+                  value={formData.minTransferTime}
                   onChange={handleChange}
                   className="bg-white/5 border-white/10 h-10"
                 />
@@ -323,26 +366,14 @@ export const SearchExperience = ({ token }) => {
                 </div>
 
                 <div className="space-y-4">
-                  <div className="bg-white/5 p-4 rounded-lg border border-white/5 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-1 h-full bg-orange-400" />
-                    <p className="text-sm text-gray-300">
-                      <strong className="text-orange-400">High Congestion:</strong> The BCT sector is currently experiencing 15% higher traffic than usual. Expect minor delays.
-                    </p>
-                  </div>
-
-                  <div className="bg-white/5 p-4 rounded-lg border border-white/5 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-1 h-full bg-emerald-green" />
-                    <p className="text-sm text-gray-300">
-                      <strong className="text-emerald-green">Pro Tip:</strong> Searching for routes after 22:00 yields 20% higher seat availability.
-                    </p>
-                  </div>
-                  
-                  <div className="bg-white/5 p-4 rounded-lg border border-white/5 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-1 h-full bg-cyan" />
-                    <p className="text-sm text-gray-300">
-                      <strong className="text-cyan">Trending Route:</strong> NDLS to LKO is highly active today. Booking early is recommended.
-                    </p>
-                  </div>
+                  {analyzeSearchExperience(results, formData.from, formData.to).map((insight, itemIdx) => (
+                    <div key={itemIdx} className="bg-white/5 p-4 rounded-lg border border-white/5 relative overflow-hidden">
+                      <div className={`absolute top-0 left-0 w-1 h-full ${insight.border}`} />
+                      <p className="text-sm text-gray-300">
+                        <strong className={insight.color}>{insight.title}:</strong> {insight.text}
+                      </p>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>

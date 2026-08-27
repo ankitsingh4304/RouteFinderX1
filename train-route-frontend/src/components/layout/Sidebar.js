@@ -1,7 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Link, useLocation } from "react-router-dom";
-import { Home, Search, LayoutDashboard, Settings, Map as MapIcon, Train, User } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Home, Search, LayoutDashboard, Settings, Train, User, LogOut } from "lucide-react";
 import { cn } from "../../lib/utils";
 
 const NAV_ITEMS = [
@@ -13,6 +13,13 @@ const NAV_ITEMS = [
 
 export const Sidebar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("username");
+    navigate("/login");
+  };
 
   return (
     <motion.aside
@@ -57,7 +64,7 @@ export const Sidebar = () => {
         })}
       </div>
       
-      <div className="p-6 border-t border-white/5">
+      <div className="p-6 border-t border-white/5 space-y-1">
         <Link to="/settings">
           <div className={cn(
             "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors cursor-pointer",
@@ -69,6 +76,16 @@ export const Sidebar = () => {
             Settings
           </div>
         </Link>
+
+        {localStorage.getItem("token") && (
+          <div 
+            onClick={handleLogout}
+            className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 cursor-pointer transition-colors"
+          >
+            <LogOut size={18} />
+            Sign Out
+          </div>
+        )}
       </div>
     </motion.aside>
   );

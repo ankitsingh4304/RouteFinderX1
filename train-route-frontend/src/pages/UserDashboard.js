@@ -1,9 +1,13 @@
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import axios from "axios";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
-import { User, Ticket, Clock, MapPin, ChevronRight, CheckCircle2, Award, Download } from "lucide-react";
+import { User, Ticket, Clock, MapPin, CheckCircle2, Award, Download, Trash2, RefreshCw, LogOut } from "lucide-react";
+
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 const UPCOMING_TRIP = {
   id: "RT-849201934",
@@ -19,45 +23,68 @@ const UPCOMING_TRIP = {
   status: "Active Sync",
 };
 
-const PAST_BOOKINGS = [
-  {
-    id: "RT-492810394",
-    trainName: "Shatabdi Express (12004)",
-    from: "NDLS",
-    to: "LKO",
-    date: "12 Sep 2026",
-    fare: "₹1,450",
-    status: "Archived",
-  },
-  {
-    id: "RT-593820192",
-    trainName: "Vande Bharat (22436)",
-    from: "NDLS",
-    to: "BSB",
-    date: "05 Aug 2026",
-    fare: "₹2,200",
-    status: "Archived",
-  },
-  {
-    id: "RT-293847561",
-    trainName: "Duronto Express (12273)",
-    from: "HWH",
-    to: "NDLS",
-    date: "14 Jul 2026",
-    fare: "₹3,100",
-    status: "Archived",
-  },
-];
-
 export const UserDashboard = () => {
-  const [isEditing, setIsEditing] = React.useState(false);
-  const [username, setUsername] = React.useState(localStorage.getItem("username") || "Alex Carter");
-  const [editName, setEditName] = React.useState(username);
+  const navigate = useNavigate();
+  const [isEditing, setIsEditing] = useState(false);
+  const [username, setUsername] = useState(localStorage.getItem("username") || "Alex Carter");
+  const [editName, setEditName] = useState(username);
+  const [history, setHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(true);
+
+  const token = localStorage.getItem("token");
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("username");
+    navigate("/login");
+  };
+
+  const fetchHistory = useCallback(async () => {
+    try {
+      setLoadingHistory(true);
+      const res = await axios.get(`${API_URL}/api/user/history`, {
+        headers: { "x-auth-token": token }
+      });
+      if (res.data.success) {
+        setHistory(res.data.history || []);
+      }
+    } catch (err) {
+      console.error("Failed to load search history:", err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
 
   const handleSaveProfile = () => {
     setUsername(editName);
     localStorage.setItem("username", editName);
     setIsEditing(false);
+  };
+
+  const handleDeleteItem = async (id) => {
+    try {
+      await axios.delete(`${API_URL}/api/user/history/${id}`, {
+        headers: { "x-auth-token": token }
+      });
+      setHistory(prev => prev.filter(item => item._id !== id));
+    } catch (err) {
+      console.error("Failed to delete history item:", err);
+    }
+  };
+
+  const handleClearAll = async () => {
+    try {
+      await axios.delete(`${API_URL}/api/user/history/clear/all`, {
+        headers: { "x-auth-token": token }
+      });
+      setHistory([]);
+    } catch (err) {
+      console.error("Failed to clear history:", err);
+    }
   };
 
   return (
@@ -94,6 +121,9 @@ export const UserDashboard = () => {
           ) : (
             <Button variant="outline" onClick={() => setIsEditing(true)}>Edit Profile</Button>
           )}
+          <Button variant="ghost" onClick={handleLogout} className="gap-2 text-red-400 hover:text-red-300 hover:bg-red-500/10">
+            <LogOut size={16} /> Sign Out
+          </Button>
         </div>
       </motion.div>
 
@@ -164,39 +194,81 @@ export const UserDashboard = () => {
             </Card>
           </motion.div>
 
-          {/* Past Bookings */}
+          {/* Saved Search History */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-white">Saved Route History</h2>
-              <button className="text-sm text-cyan hover:underline">View All</button>
+              <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+                <Clock className="text-cyan" size={20} /> Search History & Saved Routes
+              </h2>
+              {history.length > 0 && (
+                <button 
+                  onClick={handleClearAll}
+                  className="text-xs text-red-400 hover:text-red-300 hover:underline flex items-center gap-1"
+                >
+                  <Trash2 size={13} /> Clear History
+                </button>
+              )}
             </div>
+
             <div className="space-y-3">
-              {PAST_BOOKINGS.map((booking, idx) => (
-                <Card key={idx} className="bg-dark-card/60 hover:bg-dark-card/80 transition-colors cursor-pointer group">
-                  <CardContent className="p-4 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center flex-shrink-0">
-                        <CheckCircle2 size={20} className="text-emerald-green" />
-                      </div>
-                      <div>
-                        <div className="font-bold text-white">{booking.from} <span className="text-gray-500 font-normal mx-1">→</span> {booking.to}</div>
-                        <div className="text-sm text-gray-400">{booking.trainName} • {booking.date}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between sm:justify-end gap-6 sm:w-auto w-full border-t border-white/5 pt-3 sm:border-0 sm:pt-0">
-                      <div className="text-right">
-                        <div className="text-lg font-bold text-white">{booking.fare}</div>
-                        <div className="text-xs text-gray-500 uppercase">{booking.status}</div>
-                      </div>
-                      <ChevronRight size={20} className="text-gray-500 group-hover:text-cyan transition-colors" />
-                    </div>
-                  </CardContent>
+              {loadingHistory ? (
+                <div className="text-center py-8 text-gray-400 text-sm flex items-center justify-center gap-2">
+                  <RefreshCw className="animate-spin text-cyan" size={16} /> Loading search history...
+                </div>
+              ) : history.length === 0 ? (
+                <Card className="bg-dark-card/40 border-dashed border-white/10 text-center py-8">
+                  <p className="text-gray-400 text-sm">No search history recorded yet.</p>
+                  <p className="text-xs text-gray-500 mt-1">Search for routes to auto-save your travel history.</p>
                 </Card>
-              ))}
+              ) : (
+                history.map((item) => (
+                  <Card key={item._id} className="bg-dark-card/60 hover:bg-dark-card/80 transition-colors cursor-pointer group">
+                    <CardContent className="p-4 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center flex-shrink-0">
+                          <CheckCircle2 size={20} className="text-emerald-green" />
+                        </div>
+                        <div>
+                          <div className="font-bold text-white text-base">
+                            {item.from} <span className="text-cyan font-normal mx-1">→</span> {item.to}
+                          </div>
+                          <div className="text-xs text-gray-400 mt-0.5">
+                            {item.routeSummary && item.routeSummary.length > 0
+                              ? item.routeSummary.join(" • ")
+                              : "Multi-stop BFS search"}{" "}
+                            • {new Date(item.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between sm:justify-end gap-6 sm:w-auto w-full border-t border-white/5 pt-3 sm:border-0 sm:pt-0">
+                        <div className="text-right">
+                          <div className="text-base font-bold text-emerald-green">
+                            {item.totalFare ? `₹${item.totalFare}` : "N/A"}
+                          </div>
+                          <div className="text-[10px] text-cyan uppercase tracking-wider font-semibold">
+                            {item.stopsCount ? `${item.stopsCount} Leg(s)` : "Direct Path"}
+                          </div>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteItem(item._id);
+                          }}
+                          className="text-gray-500 hover:text-red-400 transition-colors p-1"
+                          title="Delete entry"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </div>
           </motion.div>
 
@@ -235,7 +307,7 @@ export const UserDashboard = () => {
                     <Ticket className="text-neon-purple" size={18} />
                     <span className="text-sm text-gray-300">Total Routes</span>
                   </div>
-                  <span className="font-bold text-white">28</span>
+                  <span className="font-bold text-white">{history.length}</span>
                 </div>
               </CardContent>
             </Card>

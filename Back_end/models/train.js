@@ -9,7 +9,14 @@ const TrainSchema = new mongoose.Schema({
   fare: { type: Number, required: true },
   duration: { type: String, required: true },
   availability: { type: Number, required: true },
-  dateOfJourney: { type: String, required: true }
+  dateOfJourney: { type: String, required: true },
+  stopDetails: [{
+    station: { type: String, required: true },
+    arrivalTime: { type: String, default: null },
+    departureTime: { type: String, default: null },
+    cumulativeFare: { type: Number, required: true },
+    cumulativeDuration: { type: Number, required: true }
+  }]
 });
 
 module.exports = mongoose.model('Train', TrainSchema);

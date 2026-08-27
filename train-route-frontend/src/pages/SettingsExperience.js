@@ -18,9 +18,6 @@ export const SettingsExperience = () => {
   // Interface state
   const [enableGlow, setEnableGlow] = useState(localStorage.getItem("settings_enable_glow") !== "false");
   const [enableAI, setEnableAI] = useState(localStorage.getItem("settings_enable_ai") !== "false");
-  
-  // Account/Sync Mock state
-  const [dbStatus, setDbStatus] = useState("Connected");
 
   const handleSavePreferences = (e) => {
     e.preventDefault();

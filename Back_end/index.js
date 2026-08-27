@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const multistopRoutes = require('./routes/multistoproutes');
 const authRoutes = require('./routes/auth');
+const historyRoutes = require('./routes/history');
 
 const app = express();
 
@@ -32,6 +33,7 @@ mongoose.connect(MONGO_URI)
 
 app.use('/api/auth', authRoutes);
 app.use('/api/trains', multistopRoutes);
+app.use('/api/user/history', historyRoutes);
 
 app.get('/', (req, res) => res.send('Train route finder API is running'));
 
